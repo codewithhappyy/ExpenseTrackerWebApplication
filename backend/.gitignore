@@ -1,0 +1,7 @@
+# Environment files
+*.env
+
+#dependencies
+node_modules/
+
+*nodemon.json
