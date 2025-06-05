@@ -1,9 +1,13 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthLayout from "../../components/layouts/AuthLayout";
 import Input from "../../components/Inputs/Input";
 import { validateEmail } from "../../utils/helper";
 import ProfilePhotoSelector from "../../components/Inputs/ProfilePhotoSelector";
+import axiosInstance from "../../utils/axiosInstance";
+import { API_PATHS } from "../../utils/apiPaths";
+import uploadImage from "../../utils/uploadImage";
+import { UserContext } from "../../context/userContext";
 
 const SignUp = () => {
     const [profilePic, setProfilePic] = useState(null);
@@ -11,6 +15,8 @@ const SignUp = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState(null);
+
+    const { updateUser } = useContext(UserContext);
 
     const navigate = useNavigate();
 
@@ -40,7 +46,41 @@ const SignUp = () => {
 
         setError(null);
 
-        //SignUp API call   
+        //SignUp API call 
+        try {
+            let profileImageUrl = null;
+            
+            if(profilePic) {
+                const imgUploadRes = await uploadImage(profilePic);
+                console.log('Upload Response:', imgUploadRes); 
+                profileImageUrl = imgUploadRes.imageUrl; 
+                console.log('Profile URL:', profileImageUrl); 
+            }
+            
+            const response = await axiosInstance.post(API_PATHS.AUTH.SIGNUP, {
+                name,
+                email,
+                password,
+                profileImageUrl
+            });
+
+            const { token, user } = response.data;
+            console.log('Registered User:', user); 
+
+            if(token) {
+                localStorage.setItem("token", token);
+                updateUser(user);
+                navigate("/dashboard");
+            }
+
+        } catch (error) {
+            console.log('Error details:', error);
+            if(error.response && error.response.data.message) { 
+                setError(error.response.data.message);
+            } else {
+                setError("An error occurred. Please try again.");
+            }
+        } 
     }
 
     return (
